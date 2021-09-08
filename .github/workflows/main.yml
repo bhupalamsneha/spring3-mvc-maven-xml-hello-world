@@ -32,5 +32,15 @@ jobs:
            java-version: 1.8
       - name: Build with Maven
         run: mvn -B package --file pom.xml
-      - name: tomcat deploy
-        run: curl -v -u  ${{ secrets.TOMCAT_USER }}:${{ secrets.TOMCAT_PASS }} -T /home/ec2-user/actions-runner/_work/spring3-mvc-maven-xml-hello-world/spring3-mvc-maven-xml-hello-world/target/spring3-mvc-maven-xml-hello-world-1.2.war 'http://13.233.51.182:8080/manager/text/deploy?path=/github_action_spring&update=true'
+      - name: Deploy to Github Package Registry
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          run: |
+            mkdir -p ~/.m2
+            echo "<settings><servers><server><id>gh</id><username>$(echo "$GITHUB_REPOSITORY" | 
+            awk -F / '{print 
+            $1}')</username><password>\${env.TOKEN}</password></server></servers></settings>" > 
+            ~/.m2/settings.xml
+            REPO="gh::default::https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
+            mvn deploy -DaltReleaseDeploymentRepository="${REPO}" -
+            DaltSnapshotDeploymentRepository="${REPO}"
